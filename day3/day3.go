@@ -12,7 +12,7 @@ type Token struct {
 	IsSymbol bool
 }
 
-func SolvePart1(input <-chan string) {
+func SolvePart1(input <-chan string) int {
 	matrix := Parse(input)
 	sum := 0
 
@@ -26,10 +26,10 @@ func SolvePart1(input <-chan string) {
 		}
 	}
 
-	println(sum)
+	return sum
 }
 
-func SolvePart2(input <-chan string) {
+func SolvePart2(input <-chan string) int {
 	matrix := Parse(input)
 	sum := 0
 
@@ -44,7 +44,7 @@ func SolvePart2(input <-chan string) {
 		}
 	}
 
-	println(sum)
+	return sum
 }
 
 func IsAdjacentToSymbol(matrix [][]*Token, line, col int) bool {
