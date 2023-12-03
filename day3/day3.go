@@ -1,10 +1,5 @@
 package day3
 
-import (
-	"fmt"
-	"unicode"
-)
-
 type Token struct {
 	Num      int
 	Symbol   rune
@@ -36,7 +31,7 @@ func SolvePart2(input <-chan string) int {
 	for lineNum, cols := range matrix {
 		for colNum, col := range cols {
 			if col.IsSymbol && col.Symbol == '*' {
-				adjacentParts := FindAdjacentParts(matrix, lineNum, colNum)
+				adjacentParts := FindAdjacentParts(matrix, lineNum, colNum, 3)
 				if len(adjacentParts) == 2 {
 					sum += adjacentParts[0].Num * adjacentParts[1].Num
 				}
@@ -57,7 +52,7 @@ func IsAdjacentToSymbol(matrix [][]*Token, line, col int) bool {
 	return false
 }
 
-func FindAdjacentParts(matrix [][]*Token, line, col int) []*Token {
+func FindAdjacentParts(matrix [][]*Token, line, col, limit int) []*Token {
 	seen := make(map[*Token]bool)
 	values := make([]*Token, 0)
 
@@ -66,6 +61,9 @@ func FindAdjacentParts(matrix [][]*Token, line, col int) []*Token {
 			if _, ok := seen[tk]; !ok {
 				seen[tk] = true
 				values = append(values, tk)
+				if len(values) >= limit {
+					break
+				}
 			}
 		}
 	}
@@ -87,7 +85,7 @@ func FindAdjacent(matrix [][]*Token, line, col int) []*Token {
 		{line + 1, col + 1},
 	}
 
-	res := make([]*Token, 0)
+	res := make([]*Token, 0, len(positions))
 
 	for _, check := range positions {
 		l, c := check[0], check[1]
@@ -103,20 +101,15 @@ func FindAdjacent(matrix [][]*Token, line, col int) []*Token {
 }
 
 func Parse(input <-chan string) [][]*Token {
-	matrix := make([][]*Token, 0)
+	matrix := make([][]*Token, 0, 140)
 
 	for line := range input {
-		cols := make([]*Token, 0)
+		cols := make([]*Token, 0, len(line))
 		curr := &Token{}
 
 		for _, r := range line {
-			if unicode.IsDigit(r) {
-				if int(r) < 48 || int(r) > 57 {
-					panic(fmt.Sprintf("IsDigit but out of bounds: %v %d", r, int(r)))
-				}
-
-				v := int(r) - 48
-
+			v := int(r) - '0'
+			if v >= 0 && v < 10 {
 				if curr.IsNum {
 					curr.Num *= 10
 					curr.Num += v
