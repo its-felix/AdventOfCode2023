@@ -31,7 +31,7 @@ func SolvePart2(input <-chan string) int {
 	for lineNum, cols := range matrix {
 		for colNum, col := range cols {
 			if col.IsSymbol && col.Symbol == '*' {
-				adjacentParts := FindAdjacentParts(matrix, lineNum, colNum, 3)
+				adjacentParts := FindAdjacentParts(matrix, lineNum, colNum)
 				if len(adjacentParts) == 2 {
 					sum += adjacentParts[0].Num * adjacentParts[1].Num
 				}
@@ -52,23 +52,20 @@ func IsAdjacentToSymbol(matrix [][]*Token, line, col int) bool {
 	return false
 }
 
-func FindAdjacentParts(matrix [][]*Token, line, col, limit int) []*Token {
+func FindAdjacentParts(matrix [][]*Token, line, col int) []*Token {
 	seen := make(map[*Token]bool)
-	values := make([]*Token, 0)
+	res := make([]*Token, 0, 8)
 
 	for _, tk := range FindAdjacent(matrix, line, col) {
 		if tk.IsNum {
 			if _, ok := seen[tk]; !ok {
 				seen[tk] = true
-				values = append(values, tk)
-				if len(values) >= limit {
-					break
-				}
+				res = append(res, tk)
 			}
 		}
 	}
 
-	return values
+	return res
 }
 
 func FindAdjacent(matrix [][]*Token, line, col int) []*Token {
