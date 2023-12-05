@@ -1,7 +1,6 @@
 package day4
 
 import (
-	"fmt"
 	"math"
 	"slices"
 	"strings"
@@ -32,8 +31,6 @@ func SolvePart2(input <-chan string) int {
 		wins := CountWinning(winning, mine)
 		copyCount := copies[cardNum-1] // number of copies of this card from previous cards
 
-		fmt.Printf("card=%d wins=%d copies=%d", cardNum, wins, copyCount)
-
 		for i := 0; i < wins; i++ {
 			wonCardIndex := cardNum + i
 			for len(copies) <= wonCardIndex {
@@ -46,8 +43,6 @@ func SolvePart2(input <-chan string) int {
 
 		sum += 1                      // one for the original
 		sum += wins * (copyCount + 1) // one for each copy
-
-		fmt.Printf(" sum=%d\n", sum)
 	}
 
 	return sum
