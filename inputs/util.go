@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"embed"
 	"fmt"
+	"io"
 	"io/fs"
 )
 
@@ -33,4 +34,16 @@ func GetInputLines(day int) <-chan string {
 	}()
 
 	return ch
+}
+
+func GetInputText(day int) string {
+	f := GetInput(day)
+	defer f.Close()
+
+	b, err := io.ReadAll(f)
+	if err != nil {
+		panic(err)
+	}
+
+	return string(b)
 }
