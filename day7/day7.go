@@ -2,7 +2,6 @@ package day7
 
 import (
 	"cmp"
-	"fmt"
 	"math/bits"
 	"slices"
 	"strconv"
@@ -87,7 +86,6 @@ func SolvePart1(input <-chan string) int {
 	winnings := 0
 	for i, r := range results {
 		winnings += r.bid * (i + 1)
-		fmt.Printf("%s: rank=%d type=%d value=%d bid=%d total=%d\n", r.raw, i+1, r.hType, r.hValue, r.bid, winnings)
 	}
 
 	return winnings
@@ -100,38 +98,34 @@ func SolvePart2(input <-chan string) int {
 }
 
 func score(hand [5]rune) (handType, uint64) {
-	counts := make(map[rune]int)
-	maxCount := [2]int{0, 0}
+	counts := make([]int, int(maxStrength))
 	handValue := uint64(0)
 
 	for i, v := range hand {
-		c, _ := counts[v]
-		c++
-		counts[v] = c
-
-		if c > maxCount[0] {
-			maxCount[1] = maxCount[0]
-			maxCount[0] = c
-		}
-
+		cardStrength := strengths[v]
+		counts[cardStrength-1]++
 		shiftBits := (len(hand) - i - 1) * (64 - maxStrengthLeadingZeros)
-		cardValue := strengths[v] << shiftBits
+		cardValue := cardStrength << shiftBits
 		handValue |= cardValue
 	}
 
-	switch maxCount[0] {
+	slices.SortFunc(counts, func(a, b int) int {
+		return cmp.Compare(b, a)
+	})
+
+	switch counts[0] {
 	case 5:
 		return fiveOfAKind, handValue
 	case 4:
 		return fourOfAKind, handValue
 	case 3:
-		if maxCount[1] == 2 {
+		if counts[1] == 2 {
 			return fullHouse, handValue
 		} else {
 			return threeOfAKind, handValue
 		}
 	case 2:
-		if maxCount[1] == 2 {
+		if counts[1] == 2 {
 			return twoPair, handValue
 		} else {
 			return onePair, handValue
