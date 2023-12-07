@@ -8,6 +8,7 @@ import (
 )
 
 var strengths, maxStrength = prepareStrengths([]rune{
+	'J', // part2
 	'2',
 	'3',
 	'4',
@@ -17,7 +18,7 @@ var strengths, maxStrength = prepareStrengths([]rune{
 	'8',
 	'9',
 	'T',
-	'J',
+	// 'J', // part1
 	'Q',
 	'K',
 	'A',
@@ -51,30 +52,25 @@ func prepareStrengths(values []rune) ([]uint64, uint64) {
 }
 
 type round struct {
-	raw  string
 	hand [5]rune
 	bid  int
 }
 
 type roundResult struct {
-	raw    string
 	hType  handType
 	hValue uint64
 	bid    int
 }
 
 func SolvePart1(input <-chan string) int {
-	results := make([]roundResult, 0)
-	for _, r := range parse(input) {
-		hType, hValue := score(r.hand)
-		results = append(results, roundResult{
-			raw:    r.raw,
-			hType:  hType,
-			hValue: hValue,
-			bid:    r.bid,
-		})
-	}
+	return calculateWinnings(scoreAll(parse(input), false))
+}
 
+func SolvePart2(input <-chan string) int {
+	return calculateWinnings(scoreAll(parse(input), true))
+}
+
+func calculateWinnings(results []roundResult) int {
 	slices.SortFunc(results, func(a, b roundResult) int {
 		if sType := cmp.Compare(a.hType, b.hType); sType != 0 {
 			return sType
@@ -91,13 +87,21 @@ func SolvePart1(input <-chan string) int {
 	return winnings
 }
 
-func SolvePart2(input <-chan string) int {
-	rounds := parse(input)
-	println(rounds)
-	return 0
+func scoreAll(rounds []round, joker bool) []roundResult {
+	results := make([]roundResult, 0)
+	for _, r := range rounds {
+		hType, hValue := score(r.hand, joker)
+		results = append(results, roundResult{
+			hType:  hType,
+			hValue: hValue,
+			bid:    r.bid,
+		})
+	}
+
+	return results
 }
 
-func score(hand [5]rune) (handType, uint64) {
+func score(hand [5]rune, joker bool) (handType, uint64) {
 	counts := make([]int, int(maxStrength))
 	handValue := uint64(0)
 
@@ -109,29 +113,42 @@ func score(hand [5]rune) (handType, uint64) {
 		handValue |= cardValue
 	}
 
+	countJoker := counts[strengths['J']-1]
+	if joker {
+		counts[strengths['J']-1] = 0
+	}
+
 	slices.SortFunc(counts, func(a, b int) int {
 		return cmp.Compare(b, a)
 	})
 
+	if joker {
+		counts[0] += countJoker
+	}
+
+	return findHandType(counts), handValue
+}
+
+func findHandType(counts []int) handType {
 	switch counts[0] {
 	case 5:
-		return fiveOfAKind, handValue
+		return fiveOfAKind
 	case 4:
-		return fourOfAKind, handValue
+		return fourOfAKind
 	case 3:
 		if counts[1] == 2 {
-			return fullHouse, handValue
+			return fullHouse
 		} else {
-			return threeOfAKind, handValue
+			return threeOfAKind
 		}
 	case 2:
 		if counts[1] == 2 {
-			return twoPair, handValue
+			return twoPair
 		} else {
-			return onePair, handValue
+			return onePair
 		}
 	case 1:
-		return highCard, handValue
+		return highCard
 	default:
 		panic("no matching type")
 	}
@@ -141,7 +158,6 @@ func parse(input <-chan string) []round {
 	rounds := make([]round, 0)
 	for line := range input {
 		r := round{
-			raw:  line,
 			hand: [5]rune{0, 0, 0, 0, 0},
 		}
 
