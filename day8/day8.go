@@ -1,8 +1,6 @@
 package day8
 
-import (
-	"strings"
-)
+import "strings"
 
 type node struct {
 	lr   [2]*node
@@ -10,22 +8,32 @@ type node struct {
 }
 
 func SolvePart1(input <-chan string) int {
-	instructions, lookup, _ := parse(input)
-	start, end := lookup["AAA"], lookup["ZZZ"]
-
-	return steps(instructions, start, func(n *node) bool {
-		return n == end
-	})
+	instructions, starts := parse(
+		input,
+		func(s string) bool {
+			return s == "AAA"
+		},
+		func(s string) bool {
+			return s == "ZZZ"
+		},
+	)
+	return steps(instructions, starts[0])
 }
 
 func SolvePart2(input <-chan string) int {
-	instructions, _, starts := parse(input)
+	instructions, starts := parse(
+		input,
+		func(s string) bool {
+			return strings.HasSuffix(s, "A")
+		},
+		func(s string) bool {
+			return strings.HasSuffix(s, "Z")
+		},
+	)
 	res := 0
 
 	for i, start := range starts {
-		numSteps := steps(instructions, start, func(n *node) bool {
-			return n.exit
-		})
+		numSteps := steps(instructions, start)
 
 		if i == 0 {
 			res = numSteps
@@ -53,16 +61,16 @@ func lcm(x, y int) int {
 	return x * y / gcd(x, y)
 }
 
-func steps(instructions []int, curr *node, isExit func(*node) bool) int {
+func steps(instructions []int, curr *node) int {
 	for i := 0; ; i++ {
 		curr = curr.lr[instructions[i%len(instructions)]]
-		if isExit(curr) {
+		if curr.exit {
 			return i + 1
 		}
 	}
 }
 
-func parse(input <-chan string) ([]int, map[string]*node, []*node) {
+func parse(input <-chan string, isStart, isExit func(string) bool) ([]int, []*node) {
 	line := <-input
 	instructions := make([]int, 0, len(line))
 
@@ -89,13 +97,14 @@ func parse(input <-chan string) ([]int, map[string]*node, []*node) {
 		self := getOrCreateNode(lookup, id)
 		self.lr[0] = getOrCreateNode(lookup, line[7:10])
 		self.lr[1] = getOrCreateNode(lookup, line[12:15])
+		self.exit = isExit(id)
 
-		if strings.HasSuffix(id, "A") {
+		if isStart(id) {
 			allStarts = append(allStarts, self)
 		}
 	}
 
-	return instructions, lookup, allStarts
+	return instructions, allStarts
 }
 
 func getOrCreateNode(lookup map[string]*node, id string) *node {
@@ -104,8 +113,7 @@ func getOrCreateNode(lookup map[string]*node, id string) *node {
 	}
 
 	n := &node{
-		lr:   [2]*node{nil, nil},
-		exit: strings.HasSuffix(id, "Z"),
+		lr: [2]*node{nil, nil},
 	}
 	lookup[id] = n
 	return n
