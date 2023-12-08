@@ -7,8 +7,7 @@ import (
 	"strconv"
 )
 
-var strengths, maxStrength = prepareStrengths([]rune{
-	'J', // part2
+var strengthsPart1, maxStrengthPart1 = prepareStrengths([]rune{
 	'2',
 	'3',
 	'4',
@@ -18,12 +17,27 @@ var strengths, maxStrength = prepareStrengths([]rune{
 	'8',
 	'9',
 	'T',
-	// 'J', // part1
+	'J',
 	'Q',
 	'K',
 	'A',
 })
-var maxStrengthLeadingZeros = bits.LeadingZeros64(maxStrength)
+
+var strengthsPart2, maxStrengthPart2 = prepareStrengths([]rune{
+	'J',
+	'2',
+	'3',
+	'4',
+	'5',
+	'6',
+	'7',
+	'8',
+	'9',
+	'T',
+	'Q',
+	'K',
+	'A',
+})
 
 type handType int
 
@@ -63,11 +77,11 @@ type roundResult struct {
 }
 
 func SolvePart1(input <-chan string) int {
-	return calculateWinnings(scoreAll(parse(input), false))
+	return calculateWinnings(scoreAll(strengthsPart1, maxStrengthPart1, parse(input), false))
 }
 
 func SolvePart2(input <-chan string) int {
-	return calculateWinnings(scoreAll(parse(input), true))
+	return calculateWinnings(scoreAll(strengthsPart2, maxStrengthPart2, parse(input), true))
 }
 
 func calculateWinnings(results []roundResult) int {
@@ -87,10 +101,10 @@ func calculateWinnings(results []roundResult) int {
 	return winnings
 }
 
-func scoreAll(rounds []round, joker bool) []roundResult {
+func scoreAll(strengths []uint64, maxStrength uint64, rounds []round, joker bool) []roundResult {
 	results := make([]roundResult, 0)
 	for _, r := range rounds {
-		hType, hValue := score(r.hand, joker)
+		hType, hValue := score(strengths, maxStrength, r.hand, joker)
 		results = append(results, roundResult{
 			hType:  hType,
 			hValue: hValue,
@@ -101,14 +115,14 @@ func scoreAll(rounds []round, joker bool) []roundResult {
 	return results
 }
 
-func score(hand [5]rune, joker bool) (handType, uint64) {
+func score(strengths []uint64, maxStrength uint64, hand [5]rune, joker bool) (handType, uint64) {
 	counts := make([]int, int(maxStrength))
 	handValue := uint64(0)
 
 	for i, v := range hand {
 		cardStrength := strengths[v]
 		counts[cardStrength-1]++
-		shiftBits := (len(hand) - i - 1) * (64 - maxStrengthLeadingZeros)
+		shiftBits := (len(hand) - i - 1) * (64 - bits.LeadingZeros64(maxStrength))
 		cardValue := cardStrength << shiftBits
 		handValue |= cardValue
 	}
