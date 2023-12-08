@@ -6,9 +6,9 @@ import (
 )
 
 func TestSolvePart1(t *testing.T) {
-	println(SolvePart1(inputs.GetInputText(5)))
+	println(SolvePart1(inputs.GetInputText("day5.txt")))
 }
 
 func TestSolvePart2(t *testing.T) {
-	println(SolvePart2(inputs.GetInputText(5)))
+	println(SolvePart2(inputs.GetInputText("day5.txt")))
 }

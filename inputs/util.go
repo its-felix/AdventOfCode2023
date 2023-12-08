@@ -3,7 +3,6 @@ package inputs
 import (
 	"bufio"
 	"embed"
-	"fmt"
 	"io"
 	"io/fs"
 )
@@ -11,8 +10,8 @@ import (
 //go:embed *.txt
 var inputs embed.FS
 
-func GetInput(day int) fs.File {
-	f, err := inputs.Open(fmt.Sprintf("day%d.txt", day))
+func GetInput(name string) fs.File {
+	f, err := inputs.Open(name)
 	if err != nil {
 		panic(err)
 	}
@@ -20,10 +19,10 @@ func GetInput(day int) fs.File {
 	return f
 }
 
-func GetInputLines(day int) <-chan string {
+func GetInputLines(name string) <-chan string {
 	ch := make(chan string)
 	go func() {
-		f := GetInput(day)
+		f := GetInput(name)
 		defer f.Close()
 		defer close(ch)
 
@@ -36,8 +35,8 @@ func GetInputLines(day int) <-chan string {
 	return ch
 }
 
-func GetInputText(day int) string {
-	f := GetInput(day)
+func GetInputText(name string) string {
+	f := GetInput(name)
 	defer f.Close()
 
 	b, err := io.ReadAll(f)
