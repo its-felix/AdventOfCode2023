@@ -7,8 +7,11 @@ import (
 
 func TestSolvePart1(t *testing.T) {
 	println(SolvePart1(inputs.GetInputLines("day10_example1.txt")))
-	println(SolvePart1(inputs.GetInputLines("day10_example2.txt")))
-	println(SolvePart1(inputs.GetInputLines("day10_example3.txt")))
+	/*
+		println(SolvePart1(inputs.GetInputLines("day10_example2.txt")))
+		println(SolvePart1(inputs.GetInputLines("day10_example3.txt")))
+		println(SolvePart1(inputs.GetInputLines("day10.txt")))
+	*/
 	println(SolvePart1(inputs.GetInputLines("day10.txt")))
 }
 

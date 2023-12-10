@@ -40,23 +40,6 @@ func SolvePart2(input <-chan string) int {
 	return 0
 }
 
-func follow(n *node) int {
-	for {
-		for _, conn := range n.conn {
-			if conn == nil || !conn.valid {
-				continue
-			}
-
-			if n.distance > conn.distance {
-				return n.distance
-			}
-
-			n = conn
-			break
-		}
-	}
-}
-
 func distance(n *node) *node {
 	var prev *node
 	queue := [][2]*node{{n, nil}}
@@ -82,13 +65,17 @@ func distance(n *node) *node {
 				dirty[conn] = true
 				queue = append(queue, [2]*node{conn, n})
 			}
+
+			if v, _ := dirty[farthest]; v || conn.distance > farthest.distance {
+				farthest = conn
+				dirty = make(map[*node]bool)
+			}
 		}
 
 		if v, _ := dirty[farthest]; v || n.distance > farthest.distance {
 			farthest = n
+			dirty = make(map[*node]bool)
 		}
-
-		delete(dirty, n)
 	}
 
 	return farthest
