@@ -1,4 +1,4 @@
-package day5
+package day05
 
 type ranges[T any] struct {
 	entries []rangeEntry[T]

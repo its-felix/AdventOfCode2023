@@ -1,4 +1,4 @@
-package day2
+package day07
 
 import (
 	"github.com/its-felix/AdventOfCode2023/inputs"
@@ -6,21 +6,25 @@ import (
 )
 
 func TestSolvePart1(t *testing.T) {
-	SolvePart1(inputs.GetInputLines("day2.txt"), 12, 13, 14)
+	println(SolvePart1(inputs.GetInputLines("day7.txt")))
 }
 
 func TestSolvePart2(t *testing.T) {
-	SolvePart2(inputs.GetInputLines("day2.txt"))
+	println(SolvePart2(inputs.GetInputLines("day7.txt")))
 }
 
 func BenchmarkSolvePart1(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		SolvePart1(inputs.GetInputLines("day2.txt"), 12, 13, 14)
+		if SolvePart1(inputs.GetInputLines("day7.txt")) != 251136060 {
+			b.FailNow()
+		}
 	}
 }
 
 func BenchmarkSolvePart2(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		SolvePart2(inputs.GetInputLines("day2.txt"))
+		if SolvePart2(inputs.GetInputLines("day7.txt")) != 249400220 {
+			b.FailNow()
+		}
 	}
 }

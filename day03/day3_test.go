@@ -1,4 +1,4 @@
-package day3
+package day03
 
 import (
 	"github.com/its-felix/AdventOfCode2023/inputs"
