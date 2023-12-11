@@ -31,14 +31,53 @@ type node struct {
 }
 
 func SolvePart1(input <-chan string) int {
-	start := parse(input)
-	return distance(start).distance
-	// return follow(start)
+	return distance(parse(input)).distance
 }
 
 func SolvePart2(input <-chan string) int {
-	parse(input)
-	return 0
+	return enclosed(parse(input))
+}
+
+func enclosed(n *node) int {
+	acc, d := 0, 0
+
+	start := n
+	var prev *node
+	count := 1
+
+	for {
+		for _, direction := range n.directions {
+			conn := n.conn[direction]
+			if conn == nil || !conn.valid || conn == prev {
+				continue
+			}
+
+			prev = n
+			n = conn
+
+			if n == start {
+				if acc < 0 {
+					acc = -acc
+				}
+
+				return acc - (count / 2) + 1
+			}
+
+			switch direction {
+			case north:
+				d += 1
+			case east:
+				acc += d
+			case south:
+				d -= 1
+			case west:
+				acc -= d
+			}
+
+			count++
+			break
+		}
+	}
 }
 
 func distance(n *node) *node {
@@ -93,8 +132,8 @@ func parse(input <-chan string) *node {
 		for col, r := range line {
 			var n *node
 			grid, n = getOrCreateNode(grid, row, col)
-			n.valid = true
 			n.raw = r
+			n.valid = true
 			n.directions = connections[r]
 
 			for _, direction := range n.directions {
