@@ -1,32 +1,30 @@
 package day11
 
 func SolvePart1(input <-chan string) int {
-	galaxies, rowHasGalaxy, colHasGalaxy := parse(input)
-
-	sum := 0
-	for i := 0; i < len(galaxies); i++ {
-		for j := i + 1; j < len(galaxies); j++ {
-			sum += distance(galaxies[i], galaxies[j], rowHasGalaxy, colHasGalaxy, 2)
-		}
-	}
-
-	return sum
+	return solve(input, 2)
 }
 
 func SolvePart2(input <-chan string) int {
-	galaxies, rowHasGalaxy, colHasGalaxy := parse(input)
+	return solve(input, 1000000)
+}
 
+func solve(input <-chan string, expansion int) int {
+	galaxies, expandedRows, expandedCols := parse(input)
+	return sumDistance(galaxies, expandedRows, expandedCols, expansion)
+}
+
+func sumDistance(galaxies [][2]int, expandedRows, expandedCols []int, expansion int) int {
 	sum := 0
 	for i := 0; i < len(galaxies); i++ {
 		for j := i + 1; j < len(galaxies); j++ {
-			sum += distance(galaxies[i], galaxies[j], rowHasGalaxy, colHasGalaxy, 1000000)
+			sum += distance(galaxies[i], galaxies[j], expandedRows, expandedCols, expansion)
 		}
 	}
 
 	return sum
 }
 
-func distance(a, b [2]int, rowHasGalaxy, colHasGalaxy []bool, expansion int) int {
+func distance(a, b [2]int, expandedRows, expandedCols []int, expansion int) int {
 	startRow, endRow, startCol, endCol := a[0], b[0], a[1], b[1]
 	if startRow > endRow {
 		temp := startRow
@@ -39,37 +37,25 @@ func distance(a, b [2]int, rowHasGalaxy, colHasGalaxy []bool, expansion int) int
 		endCol = temp
 	}
 
-	d := 0
-	for row := startRow; row < endRow; row++ {
-		if rowHasGalaxy[row] {
-			d += 1
-		} else {
-			d += expansion
-		}
-	}
+	rawDistance := (endRow - startRow) + (endCol - startCol)
+	expandedRowsBetween := expandedRows[endRow] - expandedRows[startRow]
+	expandedColsBetween := expandedCols[endCol] - expandedCols[startCol]
+	totalExpanded := expandedRowsBetween + expandedColsBetween
 
-	for col := startCol; col < endCol; col++ {
-		if colHasGalaxy[col] {
-			d += 1
-		} else {
-			d += expansion
-		}
-	}
-
-	return d
+	return rawDistance - totalExpanded + (totalExpanded * expansion)
 }
 
-func parse(input <-chan string) ([][2]int, []bool, []bool) {
+func parse(input <-chan string) ([][2]int, []int, []int) {
 	rowHasGalaxy := make([]bool, 0)
 	colHasGalaxy := make([]bool, 0)
 	galaxies := make([][2]int, 0)
 
 	row := 0
 	for line := range input {
-		rowHasGalaxy = expand(rowHasGalaxy, row+1)
+		rowHasGalaxy = grow(rowHasGalaxy, row+1)
 
 		for col, r := range line {
-			colHasGalaxy = expand(colHasGalaxy, col+1)
+			colHasGalaxy = grow(colHasGalaxy, col+1)
 
 			if r == '#' {
 				rowHasGalaxy[row] = true
@@ -80,10 +66,31 @@ func parse(input <-chan string) ([][2]int, []bool, []bool) {
 		row++
 	}
 
-	return galaxies, rowHasGalaxy, colHasGalaxy
+	expandedRows := make([]int, len(rowHasGalaxy))
+	expandedCols := make([]int, len(colHasGalaxy))
+
+	total := 0
+	for i, v := range rowHasGalaxy {
+		if !v {
+			total++
+		}
+
+		expandedRows[i] = total
+	}
+
+	total = 0
+	for i, v := range colHasGalaxy {
+		if !v {
+			total++
+		}
+
+		expandedCols[i] = total
+	}
+
+	return galaxies, expandedRows, expandedCols
 }
 
-func expand[T any](s []T, size int) []T {
+func grow[T any](s []T, size int) []T {
 	missing := size - len(s) + 1
 	if missing > 0 {
 		s = append(s, make([]T, missing)...)
