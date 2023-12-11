@@ -23,10 +23,11 @@ var connections = map[rune][]int{
 }
 
 type node struct {
-	raw      rune
-	valid    bool
-	distance int
-	conn     [4]*node
+	raw        rune
+	valid      bool
+	distance   int
+	directions []int
+	conn       [4]*node
 }
 
 func SolvePart1(input <-chan string) int {
@@ -55,7 +56,8 @@ func distance(n *node) *node {
 
 		dist := n.distance + 1
 
-		for _, conn := range n.conn {
+		for _, direction := range n.directions {
+			conn := n.conn[direction]
 			if conn == nil || !conn.valid || conn == prev {
 				continue
 			}
@@ -63,6 +65,7 @@ func distance(n *node) *node {
 			if conn.distance > dist {
 				conn.distance = dist
 				dirty[conn] = true
+
 				queue = append(queue, [2]*node{conn, n})
 			}
 
@@ -92,8 +95,9 @@ func parse(input <-chan string) *node {
 			grid, n = getOrCreateNode(grid, row, col)
 			n.valid = true
 			n.raw = r
+			n.directions = connections[r]
 
-			for _, direction := range connections[r] {
+			for _, direction := range n.directions {
 				connRow, connCol := directionToPos(row, col, direction)
 
 				var connectedNode *node
@@ -108,6 +112,7 @@ func parse(input <-chan string) *node {
 			if r == 'S' {
 				start = n
 				start.distance = 0
+				start.directions = []int{north, east, south, west}
 			}
 		}
 
