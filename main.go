@@ -1,11 +1,68 @@
 package main
 
 import (
-	"github.com/its-felix/AdventOfCode2023/day01"
-	"github.com/its-felix/AdventOfCode2023/inputs"
+	"errors"
+	"fmt"
+	"io"
+	"os"
+	"path/filepath"
 )
 
 func main() {
-	day01.Solve(inputs.GetInputLines("day1.txt"), day01.Lookup1)
-	day01.Solve(inputs.GetInputLines("day1.txt"), day01.Lookup2)
+	const day = 12
+	copies := [][2]string{
+		{"dayxx/dayxx.go", fmt.Sprintf("day%02d/day%02d.go", day, day)},
+		{"dayxx/dayxx_test.go", fmt.Sprintf("day%02d/day%02d_test.go", day, day)},
+		{"inputs/dayxx.txt", fmt.Sprintf("inputs/day%02d.txt", day)},
+		{"inputs/dayxx.txt", fmt.Sprintf("inputs/day%02d_example1.txt", day)},
+	}
+
+	for _, cp := range copies {
+		src, dst := cp[0], cp[1]
+
+		stat, err := os.Stat(src)
+		if err != nil {
+			panic(err)
+		}
+
+		if err = copyFile(src, dst, stat); err != nil {
+			panic(err)
+		}
+	}
+}
+
+func copyFile(src, dst string, stat os.FileInfo) error {
+	if _, err := os.Stat(dst); !errors.Is(err, os.ErrNotExist) {
+		return nil
+	}
+
+	if err := createDirIfNotExists(filepath.Dir(dst)); err != nil {
+		return err
+	}
+
+	srcF, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer srcF.Close()
+
+	dstF, err := os.OpenFile(dst, os.O_RDWR|os.O_CREATE, stat.Mode().Perm())
+	if err != nil {
+		return err
+	}
+	defer dstF.Close()
+
+	if _, err = io.Copy(dstF, srcF); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func createDirIfNotExists(dir string) error {
+	if _, err := os.Stat(dir); errors.Is(err, os.ErrNotExist) {
+		return os.Mkdir(dir, 0755)
+	}
+
+	return nil
 }
