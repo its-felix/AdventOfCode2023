@@ -20,13 +20,15 @@ func main() {
 	for _, cp := range copies {
 		src, dst := cp[0], cp[1]
 
-		stat, err := os.Stat(src)
+		srcStat, err := os.Stat(src)
 		if err != nil {
 			panic(err)
 		}
 
-		if err = copyFile(src, dst, stat); err != nil {
-			panic(err)
+		if _, err = os.Stat(dst); errors.Is(err, os.ErrNotExist) {
+			if err = copyFile(src, dst, srcStat); err != nil {
+				panic(err)
+			}
 		}
 	}
 }
