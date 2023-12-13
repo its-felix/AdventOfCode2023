@@ -7,19 +7,38 @@ import (
 )
 
 type record struct {
-	line   string
-	groups []int
+	uGroups        []*group // unique groups
+	groups         []*group // groups by index (any r.groups[g.start..g.end] == g)
+	expectedGroups []int    // expected spring groups
+}
+
+type group struct {
+	r     rune
+	start int
+	end   int
+}
+
+func (g *group) len() int {
+	return g.end - g.start + 1
 }
 
 func SolvePart1(input <-chan string) int {
+	return solve(parse(input))
+}
+
+func SolvePart2(input <-chan string) int {
+	return solve(parse(repeat(input, 5)))
+}
+
+func solve(records []record) int {
 	var wg sync.WaitGroup
 	ch := make(chan int, 200)
 
-	for _, r := range parse(input) {
+	for _, r := range records {
 		wg.Add(1)
 		go func(r record) {
 			defer wg.Done()
-			ch <- arrangements(r.line, r.groups)
+			ch <- arrangements(r)
 		}(r)
 	}
 
@@ -36,27 +55,21 @@ func SolvePart1(input <-chan string) int {
 	return sum
 }
 
-func SolvePart2(input <-chan string) int {
-	parse(input)
-	return 0
-}
-
-func arrangements(line string, groups []int) int {
+func arrangements(r record) int {
 	missing := 0
-	for _, v := range groups {
+	for _, v := range r.expectedGroups {
 		missing += v
 	}
 
-	unknown := make([]int, 0)
-	for i, r := range line {
-		if r == '#' {
-			missing--
-		} else if r == '?' {
-			unknown = append(unknown, i)
+	gCount := 0
+	for _, g := range r.uGroups {
+		if g.r == '#' {
+			missing -= g.len()
+			gCount++
 		}
 	}
 
-	return validVariations(line, groups, unknown, missing)
+	return missing
 }
 
 func validVariations(line string, groups []int, unknown []int, missing int) int {
@@ -136,38 +149,6 @@ func uniqueCombinations[T any](s []T, n int) <-chan []T {
 	return ch
 }
 
-func incr(idx []int, pos int, ref int) {
-
-}
-
-func cartesianProduct[T any, R any](s []T, n int, fn func(p []T) R) <-chan R {
-	ch := make(chan R, 100)
-	go func() {
-		defer close(ch)
-
-		nextIndex := func(ix []int, l int) {
-			for j := len(ix) - 1; j >= 0; j-- {
-				ix[j]++
-				if j == 0 || ix[j] < l {
-					return
-				}
-				ix[j] = 0
-			}
-		}
-
-		p := make([]T, n)
-		for ix := make([]int, n); ix[0] < len(s); nextIndex(ix, len(s)) {
-			for i, j := range ix {
-				p[i] = s[j]
-			}
-
-			ch <- fn(p)
-		}
-	}()
-
-	return ch
-}
-
 func isValidVariation(line string, groups []int) bool {
 	groupIdx := 0
 	springCount := 0
@@ -199,9 +180,29 @@ func parse(input <-chan string) []record {
 	for line := range input {
 		parts := strings.SplitN(line, " ", 2)
 		r := record{
-			line:   parts[0],
-			groups: make([]int, 0),
+			uGroups:        make([]*group, 0),
+			groups:         make([]*group, 0),
+			expectedGroups: make([]int, 0),
 		}
+
+		var g *group
+		for i, c := range parts[0] {
+			if g == nil || g.r != c {
+				if g != nil {
+					r.uGroups = append(r.uGroups, g)
+				}
+
+				g = &group{
+					r:     c,
+					start: i,
+				}
+			}
+
+			g.end = i
+			r.groups = append(r.groups, g)
+		}
+
+		r.uGroups = append(r.uGroups, g)
 
 		for _, num := range strings.Split(parts[1], ",") {
 			v, err := strconv.Atoi(num)
@@ -209,11 +210,36 @@ func parse(input <-chan string) []record {
 				panic(err)
 			}
 
-			r.groups = append(r.groups, v)
+			r.expectedGroups = append(r.expectedGroups, v)
 		}
 
 		records = append(records, r)
 	}
 
 	return records
+}
+
+func repeat(input <-chan string, times int) <-chan string {
+	ch := make(chan string)
+	go func() {
+		defer close(ch)
+
+		for line := range input {
+			parts := strings.SplitN(line, " ", 2)
+			seps := []string{"?", ","}
+
+			for i, part := range parts {
+				copies := make([]string, times)
+				for j := 0; j < times; j++ {
+					copies[j] = part
+				}
+
+				parts[i] = strings.Join(copies, seps[i])
+			}
+
+			ch <- strings.Join(parts, " ")
+		}
+	}()
+
+	return ch
 }

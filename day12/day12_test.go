@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-const input = "day12.txt"
+const input = "day12_example1.txt"
 
 func TestSolvePart1(t *testing.T) {
 	println(SolvePart1(inputs.GetInputLines(input)))
