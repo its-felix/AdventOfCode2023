@@ -25,7 +25,7 @@ func BenchmarkSolvePart1(b *testing.B) {
 
 func BenchmarkSolvePart2(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		if SolvePart1(inputs.GetInputLines(input)) != 0 {
+		if SolvePart2(inputs.GetInputLines(input)) != 0 {
 			b.FailNow()
 		}
 	}
