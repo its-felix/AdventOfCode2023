@@ -8,7 +8,6 @@ import (
 const input = "day13.txt"
 
 func TestSolvePart1(t *testing.T) {
-	println(SolvePart1(inputs.GetInputLines("day13_example1.txt")))
 	println(SolvePart1(inputs.GetInputLines(input)))
 }
 

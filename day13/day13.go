@@ -6,19 +6,18 @@ type pattern struct {
 }
 
 func SolvePart1(input <-chan string) int {
-	return solve(parse(input))
+	return solve(parse(input), false)
 }
 
 func SolvePart2(input <-chan string) int {
-	parse(input)
-	return 0
+	return solve(parse(input), true)
 }
 
-func solve(patterns []pattern) int {
+func solve(patterns []pattern, smudges bool) int {
 	sum := 0
 	for _, p := range patterns {
-		rowReflections := maxReflectionsLeft(p.rows)
-		colReflections := maxReflectionsLeft(p.columns)
+		rowReflections := maxReflectionsLeft(p.rows, smudges)
+		colReflections := maxReflectionsLeft(p.columns, smudges)
 
 		if rowReflections > colReflections {
 			sum += rowReflections * 100
@@ -30,7 +29,7 @@ func solve(patterns []pattern) int {
 	return sum
 }
 
-func maxReflectionsLeft(s []string) int {
+func maxReflectionsLeft(s []string, smudges bool) int {
 	a, b := 0, 0
 
 	// fold right onto left
@@ -39,7 +38,7 @@ func maxReflectionsLeft(s []string) int {
 		l := len(cmp)
 
 		if l%2 == 0 {
-			if isReflected(cmp) {
+			if isReflected(cmp, smudges) {
 				a = len(s) - (l / 2)
 				break
 			}
@@ -48,7 +47,7 @@ func maxReflectionsLeft(s []string) int {
 			// we can ignore the last element of the right side for the comparison
 			if i == 0 {
 				cmp = cmp[:l-1]
-				if isReflected(cmp) {
+				if isReflected(cmp, smudges) {
 					a = len(s) - ((l + 1) / 2)
 					break
 				}
@@ -62,7 +61,7 @@ func maxReflectionsLeft(s []string) int {
 		l := len(cmp)
 
 		if l%2 == 0 {
-			if isReflected(cmp) {
+			if isReflected(cmp, smudges) {
 				b = l / 2
 				break
 			}
@@ -71,7 +70,7 @@ func maxReflectionsLeft(s []string) int {
 			// we can ignore the last element of the left side for the comparison
 			if i == len(s) {
 				cmp = cmp[1:]
-				if isReflected(cmp) {
+				if isReflected(cmp, smudges) {
 					b = (l + 1) / 2
 					break
 				}
@@ -82,14 +81,57 @@ func maxReflectionsLeft(s []string) int {
 	return max(a, b)
 }
 
-func isReflected(s []string) bool {
-	for i := 0; i < len(s)/2; i++ {
-		if s[i] != s[len(s)-i-1] {
-			return false
+func isReflected(s []string, smudges bool) bool {
+	ch := make(chan []string, 1)
+	if smudges {
+		go func(s []string) {
+			defer close(ch)
+
+			rowI, colI := 0, 0
+			for {
+				dst := append(make([]string, 0, len(s)), s...)
+				row := []rune(dst[rowI])
+				if row[colI] == '.' {
+					row[colI] = '#'
+				} else {
+					row[colI] = '.'
+				}
+
+				dst[rowI] = string(row)
+				ch <- dst
+
+				colI++
+				if colI >= len(row) {
+					colI = 0
+					rowI++
+
+					if rowI >= len(dst) {
+						break
+					}
+				}
+			}
+		}(s)
+	} else {
+		ch <- s
+		close(ch)
+	}
+
+	for s := range ch {
+		match := true
+
+		for i := 0; i < len(s)/2; i++ {
+			if s[i] != s[len(s)-i-1] {
+				match = false
+				break
+			}
+		}
+
+		if match {
+			return true
 		}
 	}
 
-	return true
+	return false
 }
 
 func parse(input <-chan string) []pattern {
