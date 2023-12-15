@@ -9,7 +9,7 @@ const (
 
 func SolvePart1(input <-chan string) int {
 	g := parse(input)
-	g.tilt(north)
+	tilt(g, north)
 	return solve(g)
 }
 
@@ -19,7 +19,7 @@ func SolvePart2(input <-chan string) int {
 	return solve(g)
 }
 
-func solve(g grid) int {
+func solve(g grid[rune]) int {
 	sum := 0
 
 	for i, line := range g {
@@ -33,7 +33,7 @@ func solve(g grid) int {
 	return sum
 }
 
-func buildString(g grid) string {
+func buildString(g grid[rune]) string {
 	s := ""
 	for _, line := range g {
 		s += string(line)
@@ -43,7 +43,7 @@ func buildString(g grid) string {
 	return s[:len(s)-1]
 }
 
-func runCycles(g grid, times int) {
+func runCycles(g grid[rune], times int) {
 	var cycleStart, cycleLen int
 	cache := make(map[string]int)
 
@@ -66,16 +66,14 @@ func runCycles(g grid, times int) {
 	}
 }
 
-func runCycle(g grid) {
-	g.tilt(north)
-	g.tilt(west)
-	g.tilt(south)
-	g.tilt(east)
+func runCycle(g grid[rune]) {
+	tilt(g, north)
+	tilt(g, west)
+	tilt(g, south)
+	tilt(g, east)
 }
 
-type grid [][]rune
-
-func (g grid) tilt(tilt uint8) {
+func tilt(g grid[rune], tilt uint8) {
 	var rowPrev, colPrev, row, col int
 	var ok bool
 
@@ -101,7 +99,9 @@ func (g grid) tilt(tilt uint8) {
 	}
 }
 
-func (g grid) iter(tilt uint8) func() (int, int, int, int, bool) {
+type grid[T any] [][]T
+
+func (g grid[T]) iter(tilt uint8) func() (int, int, int, int, bool) {
 	var rIdx, cIdx int
 	var prevOffset int
 	var rStart, rEnd, rIncr int
@@ -159,7 +159,7 @@ func (g grid) iter(tilt uint8) func() (int, int, int, int, bool) {
 	}
 }
 
-func parse(input <-chan string) grid {
+func parse(input <-chan string) grid[rune] {
 	lines := make([][]rune, 0)
 	for line := range input {
 		lines = append(lines, []rune(line))
