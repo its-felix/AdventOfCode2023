@@ -1,5 +1,7 @@
 package day16
 
+import "github.com/its-felix/AdventOfCode2023/util"
+
 const (
 	north = iota
 	east
@@ -61,7 +63,7 @@ func printEnergized(energized [][]bool) {
 func countEnergized(grid [][]rune, energized [][]bool, row, col, direction int) int {
 	sum := 0
 	queue := [][3]int{{row, col, direction}}
-	seen := make(map[[3]int]struct{})
+	seen := make(util.Set[[3]int])
 
 	for len(queue) > 0 {
 		curr := queue[0]
@@ -73,9 +75,7 @@ func countEnergized(grid [][]rune, energized [][]bool, row, col, direction int) 
 			sum++
 		}
 
-		if _, ok := seen[curr]; !ok {
-			seen[curr] = struct{}{}
-
+		if seen.AddIfAbsent(curr) {
 			for _, next := range nextPosAndDirection(grid[row][col], row, col, direction) {
 				if !isValidIndex(grid, next[0], next[1]) {
 					continue
