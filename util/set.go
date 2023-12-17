@@ -7,10 +7,7 @@ func (s Set[T]) Add(v T) {
 }
 
 func (s Set[T]) AddIfAbsent(v T) bool {
-	if _, present := s[v]; !present {
-		s[v] = struct{}{}
-		return true
-	}
-
-	return false
+	_, present := s[v]
+	s[v] = struct{}{}
+	return !present
 }
