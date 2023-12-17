@@ -10,59 +10,33 @@ const (
 )
 
 func SolvePart1(input <-chan string) int {
-	grid, energized := parse(input)
-	return countEnergized(grid, energized, 0, 0, east)
+	return countEnergized(parse(input), 0, 0, east)
 }
 
 func SolvePart2(input <-chan string) int {
-	grid, energized := parse(input)
+	grid := parse(input)
 	most := 0
 
 	for row := 0; row < len(grid); row++ {
-		most = max(most, countEnergized(grid, copy2D(energized), row, 0, east))
-		most = max(most, countEnergized(grid, copy2D(energized), row, len(grid[row])-1, west))
+		most = max(most, countEnergized(grid, row, 0, east))
+		most = max(most, countEnergized(grid, row, len(grid[row])-1, west))
 	}
 
 	for col := 0; col < len(grid[0]); col++ {
-		most = max(most, countEnergized(grid, copy2D(energized), 0, col, south))
+		most = max(most, countEnergized(grid, 0, col, south))
 	}
 
 	for col := 0; col < len(grid[len(grid)-1]); col++ {
-		most = max(most, countEnergized(grid, copy2D(energized), len(grid)-1, col, north))
+		most = max(most, countEnergized(grid, len(grid)-1, col, north))
 	}
 
 	return most
 }
 
-func copy2D[T any](s [][]T) [][]T {
-	cp := make([][]T, len(s))
-	for i, s2 := range s {
-		cp[i] = make([]T, len(s2))
-		for j, v := range s2 {
-			cp[i][j] = v
-		}
-	}
-
-	return cp
-}
-
-func printEnergized(energized [][]bool) {
-	for _, line := range energized {
-		for _, v := range line {
-			if v {
-				print("#")
-			} else {
-				print(".")
-			}
-		}
-
-		println()
-	}
-}
-
-func countEnergized(grid [][]rune, energized [][]bool, row, col, direction int) int {
+func countEnergized(grid [][]rune, row, col, direction int) int {
 	sum := 0
 	queue := [][3]int{{row, col, direction}}
+	energized := make(util.Set[[2]int])
 	seen := make(util.Set[[3]int])
 
 	for len(queue) > 0 {
@@ -70,12 +44,11 @@ func countEnergized(grid [][]rune, energized [][]bool, row, col, direction int) 
 		row, col, direction = curr[0], curr[1], curr[2]
 		queue = queue[1:]
 
-		if !energized[row][col] {
-			energized[row][col] = true
-			sum++
-		}
-
 		if seen.AddIfAbsent(curr) {
+			if energized.AddIfAbsent([2]int{row, col}) {
+				sum++
+			}
+
 			for _, next := range nextPosAndDirection(grid[row][col], row, col, direction) {
 				if !isValidIndex(grid, next[0], next[1]) {
 					continue
@@ -189,14 +162,11 @@ func nextPos(row, col, direction int) [3]int {
 	panic("invalid direction")
 }
 
-func parse(input <-chan string) ([][]rune, [][]bool) {
+func parse(input <-chan string) [][]rune {
 	grid := make([][]rune, 0)
-	energized := make([][]bool, 0)
-
 	for line := range input {
 		grid = append(grid, []rune(line))
-		energized = append(energized, make([]bool, len(line)))
 	}
 
-	return grid, energized
+	return grid
 }
