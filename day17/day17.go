@@ -4,6 +4,7 @@ import (
 	"github.com/its-felix/AdventOfCode2023/util"
 	"maps"
 	"math"
+	"sync"
 	"sync/atomic"
 )
 
@@ -44,6 +45,8 @@ func traverse(start, end *node, maxSameDirection int) uint64 {
 	var minFinalCost atomic.Uint64
 	minFinalCost.Store(math.MaxUint64)
 
+	var wg sync.WaitGroup
+
 	for _, direction := range []int{south, east} {
 		state := traverseState{
 			n:              start,
@@ -53,10 +56,18 @@ func traverse(start, end *node, maxSameDirection int) uint64 {
 			seen:           util.Set[*node]{start: struct{}{}},
 		}
 
-		for cost := range traverseInternal(state, end, maxSameDirection, &minFinalCost) {
-			atomicMin(&minFinalCost, cost)
-		}
+		wg.Add(1)
+		go func(state traverseState) {
+			defer wg.Done()
+
+			for cost := range traverseInternal(state, end, maxSameDirection, &minFinalCost) {
+				atomicMin(&minFinalCost, cost)
+			}
+		}(state)
 	}
+
+	// 2348
+	wg.Wait()
 
 	return minFinalCost.Load()
 }
@@ -72,8 +83,6 @@ func atomicMin(addr *atomic.Uint64, v uint64) {
 			println(v)
 			break
 		}
-
-		println("miss")
 	}
 }
 
