@@ -1,11 +1,7 @@
 package day17
 
 import (
-	"github.com/its-felix/AdventOfCode2023/util"
-	"maps"
 	"math"
-	"sync"
-	"sync/atomic"
 )
 
 const (
@@ -28,7 +24,7 @@ type traverseState struct {
 	direction      int
 	directionCount int
 	cost           uint64
-	seen           util.Set[*node]
+	past4          [4]*node
 }
 
 func SolvePart1(input <-chan string) uint64 {
@@ -42,68 +38,29 @@ func SolvePart2(input <-chan string) int {
 }
 
 func traverse(start, end *node, maxSameDirection int) uint64 {
-	var minFinalCost atomic.Uint64
-	minFinalCost.Store(math.MaxUint64)
+	minFinalCost := uint64(math.MaxUint64)
+	minEntryCost := make(map[[4]*node]uint64)
+	queue := make([]traverseState, 0)
 
-	var wg sync.WaitGroup
-
-	for _, direction := range []int{south, east} {
-		state := traverseState{
+	for _, direction := range []int{east, south} {
+		queue = append(queue, traverseState{
 			n:              start,
 			direction:      direction,
 			directionCount: 1,
-			cost:           0, // initial node is not counted
-			seen:           util.Set[*node]{start: struct{}{}},
-		}
+			cost:           0,
+		})
+	}
 
-		wg.Add(1)
-		go func(state traverseState) {
-			defer wg.Done()
+	for len(queue) > 0 {
+		state := queue[0]
+		queue = queue[1:]
 
-			for cost := range traverseInternal(state, end, maxSameDirection, &minFinalCost) {
-				atomicMin(&minFinalCost, cost)
+		if state.n == end {
+			if state.cost < minFinalCost {
+				minFinalCost = state.cost
 			}
-		}(state)
-	}
-
-	// 2348
-	wg.Wait()
-
-	return minFinalCost.Load()
-}
-
-func atomicMin(addr *atomic.Uint64, v uint64) {
-	for {
-		currMin := addr.Load()
-		if v >= currMin {
-			break
+			continue
 		}
-
-		if addr.CompareAndSwap(currMin, v) {
-			println(v)
-			break
-		}
-	}
-}
-
-func traverseInternal(state traverseState, end *node, maxSameDirection int, minFinalCost *atomic.Uint64) <-chan uint64 {
-	if state.cost+distance(state.n, end) >= minFinalCost.Load() {
-		ch := make(chan uint64)
-		close(ch)
-		return ch
-	}
-
-	if state.n == end {
-		ch := make(chan uint64, 1)
-		ch <- state.cost
-		close(ch)
-
-		return ch
-	}
-
-	ch := make(chan uint64, 1024)
-	go func() {
-		defer close(ch)
 
 		for direction, conn := range state.n.connected {
 			if conn == nil || !conn.valid || direction == opposite(state.direction) {
@@ -111,7 +68,12 @@ func traverseInternal(state traverseState, end *node, maxSameDirection int, minF
 			}
 
 			cost := state.cost + conn.cost
-			if cost+distance(conn, end) >= minFinalCost.Load() {
+			if cost+distance(conn, end) >= minFinalCost {
+				continue
+			}
+
+			past4 := [4]*node{conn, state.past4[0], state.past4[1], state.past4[2]}
+			if mCost, ok := minEntryCost[past4]; ok && cost >= mCost {
 				continue
 			}
 
@@ -123,23 +85,18 @@ func traverseInternal(state traverseState, end *node, maxSameDirection int, minF
 				}
 			}
 
-			if seen := maps.Clone(state.seen); seen.AddIfAbsent(conn) {
-				connState := traverseState{
-					n:              conn,
-					direction:      direction,
-					directionCount: directionCount,
-					cost:           cost,
-					seen:           seen,
-				}
-
-				for connCost := range traverseInternal(connState, end, maxSameDirection, minFinalCost) {
-					ch <- connCost
-				}
-			}
+			minEntryCost[past4] = cost
+			queue = append(queue, traverseState{
+				n:              conn,
+				direction:      direction,
+				directionCount: directionCount,
+				cost:           cost,
+				past4:          past4,
+			})
 		}
-	}()
+	}
 
-	return ch
+	return minFinalCost
 }
 
 func distance(start, end *node) uint64 {
