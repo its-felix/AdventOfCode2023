@@ -34,12 +34,12 @@ func fixInstructions(instructions []instruction) {
 	for i, ins := range instructions {
 		stepsRaw, dirRaw := ins.rgb[:5], ins.rgb[5:]
 
-		b, err := hex.DecodeString("0" + stepsRaw)
+		b, err := hex.DecodeString("00000000000" + stepsRaw)
 		if err != nil {
 			panic(err)
 		}
 
-		ins.steps = int(binary.BigEndian.Uint64(append(make([]byte, 5), b...)))
+		ins.steps = int(binary.BigEndian.Uint64(b))
 
 		switch dirRaw {
 		case "0":
