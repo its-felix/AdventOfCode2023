@@ -1,14 +1,11 @@
 package day19
 
-import "strings"
+import (
+	"maps"
+	"strings"
+)
 
 var (
-	gt = operator(func(lhs int, rhs int) bool {
-		return lhs > rhs
-	})
-	lt = operator(func(lhs, rhs int) bool {
-		return lhs < rhs
-	})
 	accept = new(workflow)
 	reject = new(workflow)
 )
@@ -23,23 +20,44 @@ type workflow struct {
 
 type rule struct {
 	category rune
-	op       operator
+	op       rune
 	value    int
 	next     *workflow
 }
 
-type operator func(lhs, rhs int) bool
-
 func SolvePart1(input <-chan string) int {
-	return solve(parse(input))
+	return solvePart1(parse(input))
 }
 
 func SolvePart2(input <-chan string) int {
-	parse(input)
-	return 0
+	wf, _ := parse(input)
+	initialRanges := map[rune][2]int{
+		'x': {1, 4000},
+		'm': {1, 4000},
+		'a': {1, 4000},
+		's': {1, 4000},
+	}
+
+	sum := 0
+	for _, ranges := range findAcceptedRanges(wf, initialRanges) {
+		totalCombinations := 0
+
+		for _, rng := range ranges {
+			combinations := rng[1] - rng[0] + 1
+			if totalCombinations == 0 {
+				totalCombinations = combinations
+			} else {
+				totalCombinations *= combinations
+			}
+		}
+
+		sum += totalCombinations
+	}
+
+	return sum
 }
 
-func solve(wf *workflow, parts []part) int {
+func solvePart1(wf *workflow, parts []part) int {
 	sum := 0
 	for _, p := range parts {
 		if eval(wf, p) {
@@ -48,6 +66,49 @@ func solve(wf *workflow, parts []part) int {
 	}
 
 	return sum
+}
+
+func deduplicateRanges(acceptedRanges []map[rune][2]int) []map[rune][2]int {
+	result := make([]map[rune][2]int, 0)
+	// TODO
+	return result
+}
+
+func findAcceptedRanges(wf *workflow, ranges map[rune][2]int) []map[rune][2]int {
+	for _, rng := range ranges {
+		if rng[0] > rng[1] {
+			return make([]map[rune][2]int, 0)
+		}
+	}
+
+	if wf == accept {
+		return []map[rune][2]int{ranges}
+	}
+
+	if wf == reject {
+		return make([]map[rune][2]int, 0)
+	}
+
+	acceptRanges := make([]map[rune][2]int, 0)
+	for _, r := range wf.rules {
+		cpRanges := maps.Clone(ranges)
+
+		if r.op == '>' {
+			cpRanges[r.category] = [2]int{
+				max(cpRanges[r.category][0], r.value+1),
+				cpRanges[r.category][1],
+			}
+		} else if r.op == '<' {
+			cpRanges[r.category] = [2]int{
+				cpRanges[r.category][0],
+				min(cpRanges[r.category][1], r.value-1),
+			}
+		}
+
+		acceptRanges = append(acceptRanges, findAcceptedRanges(r.next, cpRanges)...)
+	}
+
+	return append(acceptRanges, findAcceptedRanges(wf.otherwise, maps.Clone(ranges))...)
 }
 
 func eval(wf *workflow, p part) bool {
@@ -61,7 +122,7 @@ func eval(wf *workflow, p part) bool {
 
 	for _, r := range wf.rules {
 		v := p[r.category]
-		if r.op(v, r.value) {
+		if (r.op == '>' && v > r.value) || (r.op == '<' && v < r.value) {
 			return eval(r.next, p)
 		}
 	}
@@ -127,14 +188,7 @@ func parseRule(workflowByName map[string]*workflow, line string) rule {
 			r.category = c
 			state = 1
 		} else if state == 1 {
-			switch c {
-			case '>':
-				r.op = gt
-			case '<':
-				r.op = lt
-			default:
-				panic("invalid operator")
-			}
+			r.op = c
 			state = 2
 		} else if state == 2 {
 			if c == ':' {
