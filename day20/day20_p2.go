@@ -135,7 +135,7 @@ func flipFlopPresses(q *queue[iterationState], m *module, pulse int) {
 
 	if len(missing) < 1 {
 		m.ps[high] = numP
-		m.ps[low] = numP + 1
+		m.ps[low] = numP * 2
 		println("flipflop done")
 	} else {
 		for _, v := range missing {
