@@ -31,49 +31,49 @@ func SolvePart1(input <-chan string) int {
 }
 
 func SolvePart2(input <-chan string) int {
-	parse(input)
-	return 0
+	return solve(parse(input))
 }
 
 func solve(start, end *node) int {
-	queue := make([]state, 0)
-	queue = append(queue, state{
-		n:         start,
-		direction: south,
-		steps:     0,
-		seen:      make(util.Set[*node]),
-	})
-
 	maxSteps := math.MinInt
-	for len(queue) > 0 {
-		curr := queue[len(queue)-1]
-		queue = queue[:len(queue)-1]
-
-		if curr.n == end {
-			maxSteps = max(maxSteps, curr.steps)
-		}
-
-		for direction, conn := range curr.n.connected {
-			if conn == nil || !conn.valid || direction == opposite(curr.direction) {
-				continue
-			}
-
-			if conn.slope != -1 && conn.slope != direction {
-				continue
-			}
-
-			if seen := maps.Clone(curr.seen); seen.AddIfAbsent(curr.n) {
-				queue = append(queue, state{
-					n:         conn,
-					direction: direction,
-					steps:     curr.steps + 1,
-					seen:      seen,
-				})
-			}
-		}
+	for steps := range solveInternal(start, south, 0, make(util.Set[*node]), end) {
+		maxSteps = max(maxSteps, steps)
 	}
 
 	return maxSteps
+}
+
+func solveInternal(n *node, direction, steps int, seen util.Set[*node], end *node) <-chan int {
+	if n == end {
+		ch := make(chan int, 1)
+		ch <- steps
+		close(ch)
+		return ch
+	}
+
+	ch := make(chan int)
+	go func() {
+		defer close(ch)
+
+		for connDirection, conn := range n.connected {
+			if conn == nil || !conn.valid || connDirection == opposite(direction) {
+				continue
+			}
+
+			if conn.slope != -1 && conn.slope != connDirection {
+				// comment for part2
+				// continue
+			}
+
+			if connSeen := maps.Clone(seen); seen.AddIfAbsent(conn) {
+				for connSteps := range solveInternal(conn, connDirection, steps+1, connSeen, end) {
+					ch <- connSteps
+				}
+			}
+		}
+	}()
+
+	return ch
 }
 
 func opposite(direction int) int {
