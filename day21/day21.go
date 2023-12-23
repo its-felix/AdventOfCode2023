@@ -24,12 +24,14 @@ type state struct {
 }
 
 func SolvePart1(input <-chan string) int {
-	return numPossiblePlots(parse(input), 64)
+	_, s := parse(input)
+	return numPossiblePlots(s, 64)
 }
 
 func SolvePart2(input <-chan string) int {
-	parse(input)
-	return 0
+	grid, s := parse(input)
+	connectedEdges(grid)
+	return numPossiblePlots(s, 10)
 }
 
 func numPossiblePlots(s *node, steps int) int {
@@ -42,8 +44,8 @@ func numPossiblePlots(s *node, steps int) int {
 	final := make(util.Set[*node])
 
 	for len(queue) > 0 {
-		curr := queue[0]
-		queue = queue[1:]
+		curr := queue[len(queue)-1]
+		queue = queue[:len(queue)-1]
 
 		if curr.remainingSteps == 0 {
 			final.Add(curr.n)
@@ -66,7 +68,27 @@ func numPossiblePlots(s *node, steps int) int {
 	return len(final)
 }
 
-func parse(input <-chan string) *node {
+func connectedEdges(grid [][]*node) {
+	// connect top and bottom
+	for i := 0; i < len(grid[0]); i++ {
+		top := grid[0][i]
+		bottom := grid[len(grid)-2][i] // -2 because the parser returns a non-existing row at the bottom
+
+		top.connected[north] = bottom
+		bottom.connected[south] = top
+	}
+
+	// connect left and right
+	for i := 0; i < len(grid); i++ {
+		left := grid[i][0]
+		right := grid[i][len(grid[i])-2] // -2 because the parser returns a non-existing column at the right
+
+		left.connected[west] = right
+		right.connected[east] = left
+	}
+}
+
+func parse(input <-chan string) ([][]*node, *node) {
 	grid := make([][]*node, 0)
 	var s *node
 
@@ -91,7 +113,7 @@ func parse(input <-chan string) *node {
 		row++
 	}
 
-	return s
+	return grid, s
 }
 
 func getConnected(row, col int) [4][2]int {
